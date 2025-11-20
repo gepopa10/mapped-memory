@@ -1,2 +1,1 @@
-# mapped-region
 # mapped-memory
