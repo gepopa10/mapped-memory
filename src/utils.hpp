@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <algorithm>
 
-void create_or_extend_file(const std::string &filename, size_t new_size_bytes)
+inline void create_or_extend_file(const std::string &filename, size_t new_size_bytes)
 {
     constexpr size_t MIN_SIZE = 0; // 1 KB minimum
     new_size_bytes = std::max(new_size_bytes, MIN_SIZE);

@@ -14,6 +14,10 @@ namespace mapped_object
     public:
         MappedObject(size_t object_index) : object_index(object_index)
         {
+            if (object_index > std::numeric_limits<uint16_t>::max())
+            {
+                throw std::overflow_error("object_index would overflow uint16_t");
+            }
         }
         static void set_mapped_region(IMappedRegion *region)
         {
@@ -24,36 +28,53 @@ namespace mapped_object
             return total_data_size_jump;
         }
 
-    private:
-        size_t object_index = 0;
+        std::uint16_t object_index = 0;
         // inline to share amongst translation units, alternative is to define in cpp
         static inline IMappedRegion *mapped_region = nullptr;
 
-        int32_t *data1_holder;
-        using T1 = std::remove_pointer_t<decltype(data1_holder)>;
-        int16_t *data2_holder;
-        using T2 = std::remove_pointer_t<decltype(data2_holder)>;
-        int8_t *data3_holder;
-        using T3 = std::remove_pointer_t<decltype(data3_holder)>;
+        using T1 = int32_t;
+        using T2 = int16_t;
+        using T3 = int8_t;
         static constexpr size_t total_data_size_jump = sizeof(T1) + sizeof(T2) + sizeof(T3); // 4 + 2 + 1
 
         static inline size_t total_window_size = offset::config::window_size;
 
         template <typename T, size_t data_holder_offset = 0>
-        struct Accessor
+        struct Accessor : private offset::OffsetCalculator<T, total_data_size_jump, data_holder_offset>
         {
             using underlying_type = T;
-            const size_t &object_index;
-            offset::OffsetCalculator<T, total_data_size_jump, data_holder_offset> offset_calculator;
-            size_t current_element_index = 0;
-            size_t current_window_index = 0;
+            std::uint16_t current_element_index = 0;
+            std::uint16_t current_window_index = 0;
 
-            Accessor(const size_t &obj_idx) : object_index(obj_idx) {}
+            size_t get_object_index() const
+            {
+                // Calculate the parent MappedObject address from this Accessor's address
+                const char *this_addr = reinterpret_cast<const char *>(this);
+                size_t accessor_offset = 0;
+
+                // Determine which accessor this is based on data_holder_offset
+                if constexpr (data_holder_offset == 0)
+                    accessor_offset = offsetof(MappedObject, data1);
+                else if constexpr (data_holder_offset == sizeof(T1))
+                    accessor_offset = offsetof(MappedObject, data2);
+                else if constexpr (data_holder_offset == sizeof(T1) + sizeof(T2))
+                    accessor_offset = offsetof(MappedObject, data3);
+
+                const char *parent_addr = this_addr - accessor_offset;
+                const MappedObject *parent = reinterpret_cast<const MappedObject *>(parent_addr);
+                return parent->object_index;
+            }
 
             void push_back(T value)
             {
+                // std::cout << "get_object_index()" << get_object_index() << "current_window_index " << current_window_index <<  std::endl;
                 if (current_element_index != 0 && current_element_index % offset::config::window_size == 0)
                 {
+                    if (current_window_index >= std::numeric_limits<uint16_t>::max())
+                    {
+                        throw std::overflow_error("current_window_index would overflow uint16_t");
+                    }
+
                     // as soon as one of the object request to push outside the window we need to grow,
                     // but we need to avoid that other grow it afterwards also!
                     if (current_window_index == (total_window_size / offset::config::window_size - 1))
@@ -62,27 +83,34 @@ namespace mapped_object
                         total_window_size += offset::config::window_size;
                     }
 
+                    if (current_element_index >= std::numeric_limits<uint16_t>::max())
+                    {
+                        throw std::overflow_error("current_element_index would overflow uint16_t");
+                    }
                     current_window_index++;
                 }
 
-                const auto total_byte_offset = offset_calculator.compute_offset(object_index, current_element_index, current_window_index);
+                const auto total_byte_offset = this->compute_offset(get_object_index(), current_element_index, current_window_index);
                 char *base_addr = static_cast<char *>(mapped_region->get_address());
                 T *target = reinterpret_cast<T *>(base_addr + total_byte_offset);
                 *target = value;
                 current_element_index++;
             }
 
-            T& operator[](size_t index){
-                const auto total_byte_offset = offset_calculator.compute_offset(object_index, index, index / offset::config::window_size);
+            T &operator[](size_t index)
+            {
+                // std::cout << "object_index: " << get_object_index() << " index: " << index << std::endl;
+                const auto total_byte_offset = this->compute_offset(get_object_index(), index, index / offset::config::window_size);
                 char *base_addr = static_cast<char *>(mapped_region->get_address());
                 T *target = reinterpret_cast<T *>(base_addr + total_byte_offset);
                 return *target;
             }
         };
 
-    public:
-        Accessor<T1, 0> data1{object_index};
-        Accessor<T2, sizeof(T1)> data2{object_index};
-        Accessor<T3, sizeof(T1) + sizeof(T2)> data3{object_index};
+        Accessor<T1, 0> data1;
+        Accessor<T2, sizeof(T1)> data2;
+        Accessor<T3, sizeof(T1) + sizeof(T2)> data3;
     };
+
+    static_assert(std::is_standard_layout<MappedObject>::value, "MappedObject must be standard layout");
 }
