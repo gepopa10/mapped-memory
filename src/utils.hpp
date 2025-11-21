@@ -1,6 +1,9 @@
 #pragma once
 
 #include <filesystem>
+#include <fstream>
+#include <stdexcept>
+#include <algorithm>
 
 void create_or_extend_file(const std::string &filename, size_t new_size_bytes)
 {

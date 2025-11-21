@@ -26,6 +26,7 @@ namespace mapped_object
 
     private:
         size_t object_index = 0;
+        // inline to share amongst translation units, alternative is to define in cpp
         static inline IMappedRegion *mapped_region = nullptr;
 
         int32_t *data1_holder;
