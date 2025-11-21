@@ -8,15 +8,15 @@ class InMemoryMappedRegion : public IMappedRegion
 {
 private:
     std::vector<char> buffer;
-    size_t& window_size_bytes;
+    size_t window_size_bytes;
 
 public:
-    InMemoryMappedRegion(size_t initial_size, size_t& window_bytes)
-        : buffer(initial_size), window_size_bytes(window_bytes)
+    InMemoryMappedRegion(size_t initial_size)
+        : buffer(initial_size), window_size_bytes(initial_size)
     {
     }
 
-    void* get_address() override
+    void *get_address() override
     {
         return buffer.data();
     }

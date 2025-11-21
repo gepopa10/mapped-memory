@@ -12,15 +12,15 @@ class FileMappedRegion : public IMappedRegion
 {
 private:
     std::string filename;
-    size_t &window_size_bytes;
+    size_t window_size_bytes;
     boost::interprocess::file_mapping *file_mapping;
     boost::interprocess::mapped_region *mapped_region;
 
 public:
-    FileMappedRegion(const std::string &file, size_t &window_bytes)
-        : filename(file), window_size_bytes(window_bytes), file_mapping(nullptr), mapped_region(nullptr)
+    FileMappedRegion(const std::string &file, size_t initial_size)
+        : filename(file), window_size_bytes(initial_size), file_mapping(nullptr), mapped_region(nullptr)
     {
-        create_or_extend_file(filename, window_size_bytes);
+        create_or_extend_file(filename, initial_size);
         file_mapping = new boost::interprocess::file_mapping(filename.c_str(), boost::interprocess::read_write);
         mapped_region = new boost::interprocess::mapped_region(*file_mapping, boost::interprocess::read_write);
     }

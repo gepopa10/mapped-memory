@@ -14,8 +14,8 @@ namespace mapped_object_tests
         {
             offset::config::window_size = 2;
             offset::config::nb_objects = 2;
-            window_size_bytes = mapped_object::MappedObject::get_total_data_size_jump() * offset::config::window_size * offset::config::nb_objects;
-            region = new InMemoryMappedRegion(window_size_bytes, window_size_bytes);
+            const auto window_size_bytes = mapped_object::MappedObject::get_total_data_size_jump() * offset::config::window_size * offset::config::nb_objects;
+            region = new InMemoryMappedRegion(window_size_bytes);
             mapped_object::MappedObject::set_mapped_region(region);
             base = static_cast<char *>(region->get_address());
         }
@@ -26,7 +26,6 @@ namespace mapped_object_tests
             mapped_object::MappedObject::set_mapped_region(nullptr);
         }
 
-        size_t window_size_bytes;
         InMemoryMappedRegion *region;
         char *base;
     };
@@ -321,8 +320,8 @@ namespace mapped_object_tests
     class MockInMemoryMappedRegion : public InMemoryMappedRegion
     {
     public:
-        MockInMemoryMappedRegion(size_t initial_size, size_t &window_bytes)
-            : InMemoryMappedRegion(initial_size, window_bytes)
+        MockInMemoryMappedRegion(size_t initial_size)
+            : InMemoryMappedRegion(initial_size)
         {
             // Delegate to real implementation by default
             ON_CALL(*this, flush_and_grow())
@@ -340,8 +339,8 @@ namespace mapped_object_tests
         {
             offset::config::window_size = 2;
             offset::config::nb_objects = 2;
-            window_size_bytes = mapped_object::MappedObject::get_total_data_size_jump() * offset::config::window_size * offset::config::nb_objects;
-            region = new MockInMemoryMappedRegion(window_size_bytes, window_size_bytes);
+            const auto window_size_bytes = mapped_object::MappedObject::get_total_data_size_jump() * offset::config::window_size * offset::config::nb_objects;
+            region = new MockInMemoryMappedRegion(window_size_bytes);
             mapped_object::MappedObject::set_mapped_region(region);
             base = static_cast<char *>(region->get_address());
         }
@@ -352,7 +351,6 @@ namespace mapped_object_tests
             mapped_object::MappedObject::set_mapped_region(nullptr);
         }
 
-        size_t window_size_bytes;
         MockInMemoryMappedRegion *region;
         char *base;
     };
