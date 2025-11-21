@@ -18,6 +18,8 @@ add_executable(MyTests
 target_link_libraries(MyTests
   GTest::gtest
   GTest::gtest_main
+  GTest::gmock
+  GTest::gmock_main
 )
 
 # Include directories (so tests can find your headers)
