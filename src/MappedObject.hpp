@@ -123,6 +123,51 @@ namespace mapped_object
                 T *target = reinterpret_cast<T *>(base_addr + total_byte_offset);
                 return *target;
             }
+
+            const T &operator[](size_t index) const
+            {
+                const auto total_byte_offset = this->compute_offset(get_object_index(), index, index / offset::config::window_size);
+                char *base_addr = static_cast<char *>(mapped_region->get_address());
+                const T *target = reinterpret_cast<const T *>(base_addr + total_byte_offset);
+                return *target;
+            }
+
+            template <bool IsConst>
+            struct IteratorImpl
+            {
+                using AccessorType = std::conditional_t<IsConst, const Accessor, Accessor>;
+                using ReferenceType = std::conditional_t<IsConst, const T &, T &>;
+
+                AccessorType *accessor;
+                size_t index;
+
+                ReferenceType operator*() const { return (*accessor)[index]; }
+
+                IteratorImpl &operator++()
+                {
+                    ++index;
+                    return *this;
+                }
+
+                bool operator==(const IteratorImpl &other) const
+                {
+                    return index == other.index;
+                }
+
+                bool operator!=(const IteratorImpl &other) const
+                {
+                    return index != other.index;
+                }
+            };
+
+            using Iterator = IteratorImpl<false>;
+            using ConstIterator = IteratorImpl<true>;
+
+            Iterator begin() { return Iterator{this, 0}; }
+            Iterator end() { return Iterator{this, current_element_index}; }
+
+            ConstIterator begin() const { return ConstIterator{this, 0}; }
+            ConstIterator end() const { return ConstIterator{this, current_element_index}; }
         };
 
         Accessor<T1, 0> data1;

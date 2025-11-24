@@ -68,6 +68,39 @@ namespace mapped_object_tests
         EXPECT_EQ((*data)[1], 11);
     }
 
+    TEST_F(GIVEN_object_1_data_1, WHEN_iterate_THEN_data_accessed)
+    {
+        data->push_back(42);
+        data->push_back(11);
+        auto ite = (*data).begin();
+
+        ++ite;
+        EXPECT_EQ(*ite, 11);
+    }
+
+    TEST_F(GIVEN_object_1_data_1, WHEN_iterate_to_end_THEN_end_reached)
+    {
+        data->push_back(42);
+        data->push_back(11);
+        auto ite = (*data).begin();
+
+        ++ite;
+        ++ite;
+        EXPECT_EQ(ite, (*data).end());
+    }
+
+    TEST_F(GIVEN_object_1_data_1, WHEN_iterate_over_window_THEN_access_right_value)
+    {
+        data->push_back(42);
+        data->push_back(11);
+        data->push_back(13);
+        auto ite = (*data).begin();
+
+        ++ite;
+        ++ite;
+        EXPECT_EQ(*ite, 13);
+    }
+
     class GIVEN_object_1_data_2 : public GIVEN_object_1
     {
     protected:
@@ -675,6 +708,69 @@ namespace mapped_object_tests
             EXPECT_EQ(data[2], 2 + diff);
             EXPECT_EQ(data[3], 3 + diff);
             EXPECT_EQ(data[4], 4 + diff);
+        }
+    }
+
+    TEST_F(GIVEN_object_1_and_2_in_memory_region, WHEN_push_back_double_window_plus_one_different_object_THEN_memory_data_written_to_memory_and_iterator_works)
+    {
+        {
+            int diff = 0;
+            auto &data = obj1->data2;
+
+            for (size_t i = 0; i < offset::config::window_size + 1; ++i)
+            {
+                data.push_back(i + diff);
+            }
+            EXPECT_EQ(data[0], 0 + diff);
+            EXPECT_EQ(data[1], 1 + diff);
+            EXPECT_EQ(data[2], 2 + diff);
+
+            {
+                int i = 0;
+                for (auto &value : data)
+                {
+                    EXPECT_EQ(value, i++ + diff);
+                }
+            }
+
+            {
+                int i = 0;
+                for (const auto &value : data)
+                {
+                    EXPECT_EQ(value, i++ + diff);
+                }
+            }
+        }
+
+        {
+            int diff = 20;
+            auto &data = obj2->data3;
+
+            for (size_t i = 0; i < offset::config::window_size + 3; ++i)
+            {
+                data.push_back(i + diff);
+            }
+            EXPECT_EQ(data[0], 0 + diff);
+            EXPECT_EQ(data[1], 1 + diff);
+            EXPECT_EQ(data[2], 2 + diff);
+            EXPECT_EQ(data[3], 3 + diff);
+            EXPECT_EQ(data[4], 4 + diff);
+
+            {
+                int i = 0;
+                for (auto &value : data)
+                {
+                    EXPECT_EQ(value, i++ + diff);
+                }
+            }
+
+            {
+                int i = 0;
+                for (const auto &value : data)
+                {
+                    EXPECT_EQ(value, i++ + diff);
+                }
+            }
         }
     }
 

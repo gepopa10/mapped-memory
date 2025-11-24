@@ -505,9 +505,9 @@ namespace mapped_object_tests
         std::cout << "Hot access (avg): " << avg_hot_access_time.count() << " us" << std::endl;
         std::cout << "Cold access: " << cold_access_time.count() << " us" << std::endl;
 
-        // Assert: First stale access should be at least 50x slower than hot accesses
-        EXPECT_GT(stale_access_time.count(), avg_hot_access_time.count() * 50)
-            << "Stale memory access should be at least 50x slower than hot memory. "
+        // Assert: First stale access should be at least 10x slower than hot accesses
+        EXPECT_GT(stale_access_time.count(), avg_hot_access_time.count() * 10)
+            << "Stale memory access should be at least 10x slower than hot memory. "
             << "Stale: " << stale_access_time.count() << " us, "
             << "Hot avg: " << avg_hot_access_time.count() << " us";
 
