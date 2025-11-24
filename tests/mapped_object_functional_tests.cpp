@@ -193,52 +193,117 @@ namespace mapped_object_tests
         }
     }
 
-    // to make it pass configs should be in a singleton
+    class GIVEN_8000_objects_multiple_windows : public ::testing::Test
+    {
+    protected:
+        void SetUp() override
+        {
+            offset::config::window_size = 3;
+            offset::config::nb_objects = 8000;
+            const auto window_size_bytes = mapped_object::MappedObject::get_total_data_size_jump() * offset::config::window_size * offset::config::nb_objects;
+            const std::string filename = "file_mapped_region_test.dat";
+            region = new FileMappedRegion(filename, window_size_bytes);
+            mapped_object::MappedObject::set_mapped_region(region);
+            base = static_cast<char *>(region->get_address());
+            objs.reserve(offset::config::nb_objects);
+            for (int i = 0; i < offset::config::nb_objects; i++)
+            {
+                objs.emplace_back(i);
+            }
+        }
 
-    // class GIVEN_8000_objects_multiple_windows : public ::testing::Test
-    // {
-    // protected:
-    //     void SetUp() override
-    //     {
-    //         offset::config::window_size = 3;
-    //         offset::config::nb_objects = 8000;
-    //         const auto window_size_bytes = mapped_object::MappedObject::get_total_data_size_jump() * offset::config::window_size * offset::config::nb_objects;
-    //         const std::string filename = "file_mapped_region_test.dat";
-    //         region = new FileMappedRegion(filename, window_size_bytes);
-    //         mapped_object::MappedObject::set_mapped_region(region);
-    //         base = static_cast<char *>(region->get_address());
-    //         objs.reserve(offset::config::nb_objects);
-    //         for (int i = 0; i < offset::config::nb_objects; i++)
-    //         {
-    //             objs.emplace_back(i);
-    //         }
-    //     }
+        void TearDown() override
+        {
+            delete region;
+            mapped_object::MappedObject::set_mapped_region(nullptr);
+        }
+        FileMappedRegion *region;
+        char *base;
+        std::vector<mapped_object::MappedObject> objs;
+    };
 
-    //     void TearDown() override
-    //     {
-    //         delete region;
-    //         mapped_object::MappedObject::set_mapped_region(nullptr);
-    //     }
-    //     FileMappedRegion *region;
-    //     char *base;
-    //     std::vector<mapped_object::MappedObject> objs;
-    // };
+    TEST_F(GIVEN_8000_objects_multiple_windows, WHEN_push_back_THEN_data_written_to_memory)
+    {
+        for (int i = 0; i < 12; i++)
+        {
+            for (auto &obj : objs)
+            {
+                obj.data1.push_back(1 + i);
+                obj.data2.push_back(2 + i);
+                obj.data3.push_back(3 + i);
+            }
+        }
 
-    // TEST_F(GIVEN_8000_objects_multiple_windows, WHEN_push_back_THEN_data_written_to_memory)
-    // {
-    //     for (int i = 0; i < 6; i++)
-    //     {
-    //         for (auto &obj : objs)
-    //         {
-    //             obj.data1.push_back(1 + i);
-    //             obj.data2.push_back(2 + i);
-    //             obj.data3.push_back(3 + i);
-    //         }
-    //     }
-    //     {
-    //         const int i_value{1};
-    //         EXPECT_EQ(objs[7568].data2[i_value], 2 + i_value);
-    //     }
-    
-    // }
+        {
+            const int i_value{1};
+            EXPECT_EQ(objs[7568].data2[i_value], 2 + i_value);
+        }
+
+        {
+            const int i_value{11};
+            EXPECT_EQ(objs[2345].data3[i_value], 3 + i_value);
+        }
+    }
+
+    class GIVEN_8000_objects_lot_of_data : public ::testing::Test
+    {
+    protected:
+        void SetUp() override
+        {
+            offset::config::window_size = 50;
+            offset::config::nb_objects = 8000;
+            const auto window_size_bytes = mapped_object::MappedObject::get_total_data_size_jump() * offset::config::window_size * offset::config::nb_objects;
+            const std::string filename = "file_mapped_region_test.dat";
+            region = new FileMappedRegion(filename, window_size_bytes);
+            mapped_object::MappedObject::set_mapped_region(region);
+            base = static_cast<char *>(region->get_address());
+            objs.reserve(offset::config::nb_objects);
+            for (int i = 0; i < offset::config::nb_objects; i++)
+            {
+                objs.emplace_back(i);
+            }
+        }
+
+        void TearDown() override
+        {
+            delete region;
+            mapped_object::MappedObject::set_mapped_region(nullptr);
+        }
+        FileMappedRegion *region;
+        char *base;
+        std::vector<mapped_object::MappedObject> objs;
+    };
+
+    TEST_F(GIVEN_8000_objects_lot_of_data, WHEN_push_back_THEN_data_written_to_memory)
+    {
+        for (int i = 0; i < 5000; i++)
+        {
+            for (auto &obj : objs)
+            {
+                obj.data1.push_back((1 + i) % std::numeric_limits<decltype(obj.data1)::underlying_type>::max());
+                obj.data2.push_back((2 + i) % std::numeric_limits<decltype(obj.data2)::underlying_type>::max());
+                obj.data3.push_back((3 + i) % std::numeric_limits<decltype(obj.data3)::underlying_type>::max());
+            }
+        }
+
+        {
+            const int i_value{1};
+            EXPECT_EQ(objs[7568].data2[i_value], 2 + i_value);
+        }
+
+        {
+            const int i_value{67};
+            EXPECT_EQ(objs[2345].data3[i_value], 3 + i_value);
+        }
+
+        {
+            const int i_value{787};
+            EXPECT_EQ(objs[2345].data1[i_value], 1 + i_value);
+        }
+
+        {
+            const int i_value{4600};
+            EXPECT_EQ(objs[2345].data1[i_value], 1 + i_value);
+        }
+    }
 }

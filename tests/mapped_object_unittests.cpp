@@ -677,4 +677,14 @@ namespace mapped_object_tests
             EXPECT_EQ(data[4], 4 + diff);
         }
     }
+
+    class GIVEN_data_int8 : public GIVEN_object_1_data_3
+    {
+    };
+
+    TEST_F(GIVEN_data_int8, WHEN_push_back_value_too_large_THEN_throws_overflow_error)
+    {
+        EXPECT_THROW(data->push_back(200), std::overflow_error);
+        EXPECT_THROW(data->push_back(-129), std::overflow_error);
+    }
 }

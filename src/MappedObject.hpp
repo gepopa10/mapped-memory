@@ -22,6 +22,7 @@ namespace mapped_object
         static void set_mapped_region(IMappedRegion *region)
         {
             mapped_region = region;
+            total_window_size = offset::config::window_size;
         }
         static constexpr size_t get_total_data_size_jump()
         {
@@ -65,9 +66,27 @@ namespace mapped_object
                 return parent->object_index;
             }
 
-            void push_back(T value)
+            template <typename U>
+            void check_overflow(U value)
             {
-                // std::cout << "get_object_index()" << get_object_index() << "current_window_index " << current_window_index <<  std::endl;
+                if (value > std::numeric_limits<T>::max())
+                {
+                    throw std::overflow_error("Value would overflow target type in push_back");
+                }
+                if constexpr (std::is_signed_v<U>)
+                {
+                    if (value < std::numeric_limits<T>::min())
+                    {
+                        throw std::overflow_error("Value would overflow target type in push_back");
+                    }
+                }
+            }
+
+            template <typename U>
+            void push_back(U value)
+            {
+                check_overflow(value);
+
                 if (current_element_index != 0 && current_element_index % offset::config::window_size == 0)
                 {
                     if (current_window_index >= std::numeric_limits<uint16_t>::max())
@@ -99,7 +118,6 @@ namespace mapped_object
 
             T &operator[](size_t index)
             {
-                // std::cout << "object_index: " << get_object_index() << " index: " << index << std::endl;
                 const auto total_byte_offset = this->compute_offset(get_object_index(), index, index / offset::config::window_size);
                 char *base_addr = static_cast<char *>(mapped_region->get_address());
                 T *target = reinterpret_cast<T *>(base_addr + total_byte_offset);
