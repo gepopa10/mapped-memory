@@ -9,5 +9,11 @@ set(CMAKE_BUILD_TYPE Debug)
 
 add_executable(MyCppApp src/main.cpp)
 
+add_library(MappedObject
+  src/MappedObject.cpp
+)
+
+target_link_libraries(MyCppApp MappedObject)
+
 enable_testing()
 add_subdirectory(tests)

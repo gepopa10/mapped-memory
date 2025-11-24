@@ -7,7 +7,7 @@ FetchContent_MakeAvailable(googletest)
 
 # Create test executable
 # Automatically discover all test source files
-file(GLOB TEST_SOURCES "*.cpp")
+file(GLOB TEST_SOURCES "*tests.cpp")
 
 # Create test executable
 add_executable(MyTests
@@ -20,6 +20,7 @@ target_link_libraries(MyTests
   GTest::gtest_main
   GTest::gmock
   GTest::gmock_main
+  MappedObject
 )
 
 # Include directories (so tests can find your headers)
