@@ -783,4 +783,23 @@ namespace mapped_object_tests
         EXPECT_THROW(data->push_back(200), std::overflow_error);
         EXPECT_THROW(data->push_back(-129), std::overflow_error);
     }
+
+    class GIVEN_data_double : public GIVEN_InMemoryMappedRegion
+    {
+    protected:
+        void SetUp() override
+        {
+            GIVEN_InMemoryMappedRegion::SetUp();
+            obj = std::make_unique<mapped_object::MappedObjectImpl<double>>(0);
+            data = &obj->data1;
+        }
+        std::unique_ptr<mapped_object::MappedObjectImpl<double>> obj;
+        using data_t = decltype(obj->data1)::underlying_type;
+        decltype(obj->data1) *data;
+    };
+
+    TEST_F(GIVEN_data_double, WHEN_push_back_value_zero_THEN_no_throw)
+    {
+        EXPECT_NO_THROW(data->push_back(0.0));
+    }
 }
