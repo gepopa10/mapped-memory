@@ -73,5 +73,14 @@
         "cfenv": "cpp",
         "filesystem": "cpp",
         "any": "cpp"
+    },
+    "cmake.generator": "Unix Makefiles",
+    "cmake.preferredGenerators": [
+        "Unix Makefiles"
+    ],
+    "cmake.cmakePath": "/usr/bin/cmake",
+    "cmake.configureSettings": {
+        "CMAKE_C_COMPILER": "/usr/bin/gcc",
+        "CMAKE_CXX_COMPILER": "/usr/bin/g++"
     }
 }
