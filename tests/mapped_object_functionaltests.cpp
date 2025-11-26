@@ -7,6 +7,7 @@
 #include "MappedObject.hpp"
 #include "OffsetCalculator.hpp"
 #include "FileMappedRegion.hpp"
+#include "InMemoryMappedRegion.hpp"
 
 namespace mapped_object_tests
 {
@@ -321,7 +322,6 @@ namespace mapped_object_tests
             const std::string filename = "file_mapped_region_test.dat";
             region = new FileMappedRegion(filename, window_size_bytes);
             mapped_object::MappedObject::set_mapped_region(region);
-            base = static_cast<char *>(region->get_address());
             objs.reserve(offset::config::nb_objects);
             for (int i = 0; i < offset::config::nb_objects; i++)
             {
@@ -428,8 +428,7 @@ namespace mapped_object_tests
             }
         }
 
-        FileMappedRegion *region;
-        char *base;
+        IMappedRegion *region;
         std::vector<mapped_object::MappedObject> objs;
         std::vector<char *> memory_chunks;
         bool memory_hog_allocated = false;
@@ -522,5 +521,52 @@ namespace mapped_object_tests
             << "Cold memory access should be at least 5x slower than hot memory. "
             << "Cold: " << cold_access_time.count() << " us, "
             << "Hot avg: " << hot_access_time_2.count() << " us";
+    }
+
+    class GIVEN_8000_objects_lot_of_data_in_memory_with_memory_hog : public GIVEN_8000_objects_lot_of_data_with_memory_hog
+    {
+    protected:
+        void SetUp() override
+        {
+            // Don't call base SetUp() - we override it completely
+            offset::config::window_size = 50;
+            offset::config::nb_objects = 8000;
+            const auto window_size_bytes = mapped_object::MappedObject::get_total_data_size_jump() * offset::config::window_size * offset::config::nb_objects;
+
+            region = new InMemoryMappedRegion(window_size_bytes);
+            mapped_object::MappedObject::set_mapped_region(region);
+
+            objs.reserve(offset::config::nb_objects);
+            for (int i = 0; i < offset::config::nb_objects; i++)
+            {
+                objs.emplace_back(i);
+            }
+        }
+    };
+
+    TEST_F(GIVEN_8000_objects_lot_of_data_in_memory_with_memory_hog, WHEN_push_back_THEN_death)
+    {
+        EXPECT_DEATH(
+            {
+                for (int i = 0; i < 10000; i++)
+                {
+                    // After 100 iterations, allocate memory hog
+                    if (i == 100)
+                    {
+                        std::cout << "\n>>> Iteration " << i << " - Activating memory hog! <<<" << std::endl;
+                        allocate_memory_hog();
+                        std::cout << ">>> Continuing with memory pressure... <<<\n"
+                                  << std::endl;
+                    }
+
+                    for (auto &obj : objs)
+                    {
+                        obj.data1.push_back((1 + i) % std::numeric_limits<decltype(obj.data1)::underlying_type>::max());
+                        obj.data2.push_back((2 + i) % std::numeric_limits<decltype(obj.data2)::underlying_type>::max());
+                        obj.data3.push_back((3 + i) % std::numeric_limits<decltype(obj.data3)::underlying_type>::max());
+                    }
+                }
+            },
+            "");
     }
 }
