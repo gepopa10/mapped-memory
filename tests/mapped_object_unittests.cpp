@@ -784,22 +784,59 @@ namespace mapped_object_tests
         EXPECT_THROW(data->push_back(-129), std::overflow_error);
     }
 
-    class GIVEN_data_double : public GIVEN_InMemoryMappedRegion
+    class GIVEN_data_double : public ::testing::Test
     {
     protected:
         void SetUp() override
         {
-            GIVEN_InMemoryMappedRegion::SetUp();
+            using DoubleMappedObject = mapped_object::MappedObjectImpl<double>;
+            offset::config::window_size = 2;
+            offset::config::nb_objects = 2;
+            const auto window_size_bytes = DoubleMappedObject::get_total_data_size_jump() * offset::config::window_size * offset::config::nb_objects;
+            region = new InMemoryMappedRegion(window_size_bytes);
+            DoubleMappedObject::set_mapped_region(region);
             obj = std::make_unique<mapped_object::MappedObjectImpl<double>>(0);
-            data = &obj->data1;
         }
+
+        void TearDown() override
+        {
+            delete region;
+            mapped_object::MappedObject::set_mapped_region(nullptr);
+        }
+
+        InMemoryMappedRegion *region;
         std::unique_ptr<mapped_object::MappedObjectImpl<double>> obj;
-        using data_t = decltype(obj->data1)::underlying_type;
-        decltype(obj->data1) *data;
     };
 
     TEST_F(GIVEN_data_double, WHEN_push_back_value_zero_THEN_no_throw)
     {
-        EXPECT_NO_THROW(data->push_back(0.0));
+        EXPECT_NO_THROW(obj->data1.push_back(0.0));
+    }
+
+    class GIVEN_wrong_mapped_region_type_set : public ::testing::Test
+    {
+    protected:
+        void SetUp() override
+        {
+            using DoubleMappedObject = mapped_object::MappedObjectImpl<double>;
+            offset::config::window_size = 2;
+            offset::config::nb_objects = 2;
+            const auto window_size_bytes = DoubleMappedObject::get_total_data_size_jump() * offset::config::window_size * offset::config::nb_objects;
+            region = new InMemoryMappedRegion(window_size_bytes);
+            mapped_object::MappedObject::set_mapped_region(region);
+        }
+
+        void TearDown() override
+        {
+            delete region;
+            mapped_object::MappedObject::set_mapped_region(nullptr);
+        }
+
+        InMemoryMappedRegion *region;
+    };
+
+    TEST_F(GIVEN_wrong_mapped_region_type_set, WHEN_ctor_mapped_object_then_throw)
+    {
+        EXPECT_THROW(std::make_unique<mapped_object::MappedObjectImpl<double>>(0), std::logic_error);
     }
 }

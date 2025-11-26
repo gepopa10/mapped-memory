@@ -2,7 +2,8 @@
 
 #include <limits>
 #include <stdexcept>
-
+#include "utils.hpp"
+#include <iostream>
 namespace mapped_object
 {
     template <typename T1>
@@ -10,7 +11,9 @@ namespace mapped_object
     template <typename U>
     void MappedObjectImpl<T1>::Accessor<T, data_holder_offset>::push_back(U value)
     {
-        check_overflow(value);
+        if (!in_range<T,U>(value)){
+            throw std::overflow_error("Value would overflow target type in push_back");
+        }
 
         if (current_element_index != 0 && current_element_index % offset::config::window_size == 0)
         {

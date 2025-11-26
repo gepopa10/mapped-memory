@@ -15,6 +15,11 @@ namespace mapped_object
     public:
         MappedObjectImpl(size_t object_index) : object_index(object_index)
         {
+            if (!mapped_region)
+            {
+                throw std::logic_error("mapped_region not set for this template type");
+            }
+
             if (object_index > std::numeric_limits<uint16_t>::max())
             {
                 throw std::overflow_error("object_index would overflow uint16_t");
@@ -25,6 +30,7 @@ namespace mapped_object
             mapped_region = region;
             total_window_size = offset::config::window_size;
         }
+
         static constexpr size_t get_total_data_size_jump()
         {
             return total_data_size_jump;
@@ -65,22 +71,6 @@ namespace mapped_object
                 const char *parent_addr = this_addr - accessor_offset;
                 const MappedObjectImpl *parent = reinterpret_cast<const MappedObjectImpl *>(parent_addr);
                 return parent->object_index;
-            }
-
-            template <typename U>
-            void check_overflow(U value)
-            {
-                if (value > std::numeric_limits<T>::max())
-                {
-                    throw std::overflow_error("Value would overflow target type in push_back");
-                }
-                if constexpr (std::is_signed_v<U>)
-                {
-                    if (value < std::numeric_limits<T>::min())
-                    {
-                        throw std::overflow_error("Value would overflow target type in push_back");
-                    }
-                }
             }
 
             template <typename U>
