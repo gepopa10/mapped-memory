@@ -50,6 +50,11 @@ namespace mapped_object
         template <typename T, size_t data_holder_offset = 0>
         struct Accessor : private offset::OffsetCalculator<T, total_data_size_jump, data_holder_offset>
         {
+            static_assert(std::is_default_constructible_v<T>,
+                          "T must be default constructible for Accessor.");
+            static_assert(std::is_trivially_destructible_v<T>,
+                          "T must have a default destructor for Accessor.");
+
             using underlying_type = T;
             std::uint16_t current_element_index = 0;
             std::uint16_t current_window_index = 0;

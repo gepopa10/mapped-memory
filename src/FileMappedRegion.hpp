@@ -52,7 +52,7 @@ public:
             std::cout << "Current window_size_bytes would be: "
                       << (window_size_bytes / (1024.0 * 1024.0 * 1024.0))
                       << " GB" << std::endl;
-            std::cout << "Current mapped region sie: "
+            std::cout << "Current mapped region size: "
                       << (mapped_region->get_size() / (1024.0 * 1024.0 * 1024.0))
                       << " GB" << std::endl;
             throw;
